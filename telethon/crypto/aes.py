@@ -10,21 +10,24 @@ import pyaes
 import logging
 from . import libssl
 
+from functools import wraps
+import time
+from inspect import getframeinfo, stack
+
 
 __log__ = logging.getLogger(__name__)
 
 
 try:
-    import cryptg
-    __log__.info('cryptg detected, it will be used for encryption')
+    import tgcrypto
+    __log__.info('tgcrypto detected, it will be used for encryption')
 except ImportError:
-    cryptg = None
+    tgcrypto = None
     if libssl.encrypt_ige and libssl.decrypt_ige:
         __log__.info('libssl detected, it will be used for encryption')
     else:
         __log__.info('cryptg module not installed and libssl not found, '
                      'falling back to (slower) Python encryption')
-
 
 class AES:
     """
@@ -37,8 +40,8 @@ class AES:
         Decrypts the given text in 16-bytes blocks by using the
         given key and 32-bytes initialization vector.
         """
-        if cryptg:
-            return cryptg.decrypt_ige(cipher_text, key, iv)
+        if tgcrypto:
+            return tgcrypto.ige256_decrypt(cipher_text, key, iv)
         if libssl.decrypt_ige:
             return libssl.decrypt_ige(cipher_text, key, iv)
 
@@ -78,8 +81,8 @@ class AES:
         if padding:
             plain_text += os.urandom(16 - padding)
 
-        if cryptg:
-            return cryptg.encrypt_ige(plain_text, key, iv)
+        if tgcrypto:
+            return tgcrypto.ige256_encrypt(plain_text, key, iv)
         if libssl.encrypt_ige:
             return libssl.encrypt_ige(plain_text, key, iv)
 
